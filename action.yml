@@ -1,7 +1,6 @@
 name: Bynk CI
 description: >-
-  Run the standard Bynk quality gate — format check, type check, and tests —
-  with diagnostics annotated inline on the pull request.
+  Run the standard Bynk quality gate — format check, type check, and tests.
 author: bynk-lang
 
 branding:
