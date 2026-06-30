@@ -1,0 +1,80 @@
+name: Bynk CI
+description: >-
+  Run the standard Bynk quality gate — format check, type check, and tests —
+  with diagnostics annotated inline on the pull request.
+author: bynk-lang
+
+branding:
+  icon: check-circle
+  color: purple
+
+inputs:
+  version:
+    description: Bynk version to install (passed to setup-bynk).
+    required: false
+    default: latest
+  repository:
+    description: The owner/name repo that publishes Bynk releases.
+    required: false
+    default: accuser/bynk
+  working-directory:
+    description: Directory to run the checks in.
+    required: false
+    default: "."
+  source:
+    description: Source path passed to bynkc (file or directory).
+    required: false
+    default: src
+  format:
+    description: Run `bynkc fmt --check`.
+    required: false
+    default: "true"
+  check:
+    description: Run `bynkc check --format short`.
+    required: false
+    default: "true"
+  test:
+    description: Run `bynkc test`.
+    required: false
+    default: "true"
+  github-token:
+    description: Token for setup-bynk's API calls.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Bynk
+      uses: bynk-lang/setup-bynk@v1
+      with:
+        version: ${{ inputs.version }}
+        repository: ${{ inputs.repository }}
+        github-token: ${{ inputs.github-token }}
+
+    - name: Enable Bynk problem matcher
+      shell: bash
+      run: echo "::add-matcher::${{ github.action_path }}/bynk-problem-matcher.json"
+
+    - name: Format check
+      if: inputs.format == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: bynkc fmt --check ${{ inputs.source }}
+
+    - name: Type check
+      if: inputs.check == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: bynkc check --format short ${{ inputs.source }}
+
+    - name: Test
+      if: inputs.test == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: bynkc test ${{ inputs.source }}
+
+    - name: Disable Bynk problem matcher
+      if: always()
+      shell: bash
+      run: echo "::remove-matcher owner=bynk::"
