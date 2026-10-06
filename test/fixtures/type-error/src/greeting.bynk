@@ -1,0 +1,6 @@
+context greeting
+
+---
+Deliberately broken: returns an Int where a String is declared.
+---
+fn greet(name: String) -> String { 42 }

@@ -1,0 +1,3 @@
+# Bynk sources are LF on every checkout. On a Windows runner git otherwise
+# converts them to CRLF (core.autocrlf), and `bynkc fmt --check` rejects them.
+*.bynk text eol=lf

@@ -1,0 +1,5 @@
+suite greeting {
+	case "deliberately fails" {
+		expect greet("Bynk") == "Goodbye, Bynk!"
+	}
+}

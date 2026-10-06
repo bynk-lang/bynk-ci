@@ -1,0 +1,4 @@
+# bynk-ci test fixture: failing-test
+[project]
+name = "failing-test"
+version = "0.1.0"

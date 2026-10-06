@@ -1,0 +1,4 @@
+# bynk-ci test fixture: unformatted
+[project]
+name = "unformatted"
+version = "0.1.0"
