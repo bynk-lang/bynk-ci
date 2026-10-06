@@ -15,12 +15,25 @@ jobs:
   bynk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: bynk-lang/bynk-ci@v1
         with:
-          version: 0.107.0
-          source: src
+          version: 0.307.0
+          source: .
 ```
+
+`source: .` is the project root: `bynkc` then checks and tests the project's
+`[paths] include` trees (by default `src/` and `tests/`). With `source: src`,
+`bynkc test` doesn't see a `tests/` directory.
+
+### Minimum Bynk version for a directory `source`
+
+The format check runs `bynkc fmt --check <source>`. `bynkc fmt` accepts a
+directory from **Bynk 0.307.0**
+([accuser/bynk#1753](https://github.com/accuser/bynk/issues/1753)); before
+that it took files only, and a directory `source` failed the format step with
+"Is a directory". On an older version, either pass a single file as `source` or
+turn the format check off with `format: "false"`.
 
 Run only some checks:
 
@@ -39,7 +52,7 @@ Run only some checks:
 | `version`           | `latest`       | Bynk version (forwarded to setup-bynk). |
 | `repository`        | `accuser/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
-| `source`            | `src`          | Path passed to `bynkc` (file or directory). |
+| `source`            | `src`          | Path passed to `bynkc` (file or directory). A directory needs Bynk 0.307.0 or later for the format check. |
 | `format`            | `true`         | Run `bynkc fmt --check`. |
 | `check`             | `true`         | Run `bynkc check --format short`. |
 | `test`              | `true`         | Run `bynkc test`. |
