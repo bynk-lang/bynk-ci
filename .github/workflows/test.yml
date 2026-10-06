@@ -47,12 +47,16 @@ jobs:
           persist-credentials: false
 
       # The project root as `source`: fmt, check and test all see src/ and tests/.
+      # `bynkc test` is off on Windows: bynkc finds npm's `tsc.cmd` but spawns
+      # the bare name `tsc`, which Rust's Command resolves to `tsc.exe` only.
+      # Re-enable once bynkc spawns the path it resolved.
       - name: bynk-ci on the project root
         uses: ./
         with:
           version: ${{ env.BYNK_VERSION }}
           working-directory: test/fixtures/good
           source: .
+          test: ${{ runner.os == 'Windows' && 'false' || 'true' }}
 
       # The action's default `source`, a directory under the project.
       - name: bynk-ci with source src
@@ -61,6 +65,7 @@ jobs:
           version: ${{ env.BYNK_VERSION }}
           working-directory: test/fixtures/good
           source: src
+          test: ${{ runner.os == 'Windows' && 'false' || 'true' }}
 
       - name: The checks left nothing tracked behind
         shell: bash
