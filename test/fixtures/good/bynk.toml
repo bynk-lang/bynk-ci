@@ -1,0 +1,4 @@
+# bynk-ci test fixture: good
+[project]
+name = "good"
+version = "0.1.0"

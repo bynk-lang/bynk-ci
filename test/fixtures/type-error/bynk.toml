@@ -1,0 +1,4 @@
+# bynk-ci test fixture: type-error
+[project]
+name = "type-error"
+version = "0.1.0"
