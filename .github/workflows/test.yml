@@ -165,8 +165,8 @@ jobs:
         shell: bash
         working-directory: test/fixtures/type-error
         run: |
-          set -uo pipefail
-          out="$(bynkc check --format short . 2>&1)"
+          # The check is meant to fail here; it's the output that's under test.
+          out="$(bynkc check --format short . 2>&1)" || true
           echo "$out"
           MATCHER="$GITHUB_WORKSPACE/bynk-problem-matcher.json" OUT="$out" node -e '
             const m = require(process.env.MATCHER).problemMatcher[0].pattern[0];
