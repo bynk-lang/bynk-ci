@@ -26,7 +26,20 @@ jobs:
 `[paths] include` trees (by default `src/` and `tests/`). With `source: src`,
 `bynkc test` doesn't see a `tests/` directory.
 
-### Minimum Bynk version for a directory `source`
+### Minimum Bynk versions
+
+| Feature | Bynk |
+| --- | --- |
+| A directory `source` for the format check | 0.307.0 |
+| `bynkc test` on Windows | 0.309.0 |
+| Annotations on the right file when `working-directory` or `source` isn't `.` | 0.309.3 |
+
+Before 0.309.3, `bynkc check` named each file relative to the directory it was
+given, so with the default `source: src` an annotation pointed at
+`greeting.bynk` instead of `src/greeting.bynk`, and GitHub couldn't place it on
+the changed line. The check still failed the step; only the annotation was lost.
+
+### A directory `source` before 0.307.0
 
 The format check runs `bynkc fmt --check <source>`. `bynkc fmt` accepts a
 directory from **Bynk 0.307.0**

@@ -61,11 +61,27 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: bynkc fmt --check ${{ inputs.source }}
 
+    # Run from the repository root on <working-directory>/<source>, so each
+    # diagnostic names its file relative to the repository and the problem
+    # matcher annotates the right file. Needs Bynk 0.309.3 or later, which
+    # reports paths as typed from the working directory (accuser/bynk#1772).
     - name: Type check
       if: inputs.check == 'true'
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: bynkc check --format short ${{ inputs.source }}
+      env:
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        INPUT_SOURCE: ${{ inputs.source }}
+      run: |
+        dir="${INPUT_WORKING_DIRECTORY%/}"
+        case "$INPUT_SOURCE" in
+          /*) path="$INPUT_SOURCE" ;;
+          *)
+            if [ -z "$dir" ] || [ "$dir" = . ]; then path="$INPUT_SOURCE"
+            elif [ "$INPUT_SOURCE" = . ]; then path="$dir"
+            else path="$dir/$INPUT_SOURCE"
+            fi ;;
+        esac
+        bynkc check --format short "$path"
 
     - name: Test
       if: inputs.test == 'true'

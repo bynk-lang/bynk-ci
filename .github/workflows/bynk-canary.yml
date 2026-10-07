@@ -28,6 +28,8 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read   # test.yml reads its own run's annotations
+  checks: read
 
 jobs:
   tests:
