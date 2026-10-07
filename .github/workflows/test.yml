@@ -22,8 +22,9 @@ permissions:
   contents: read
 
 # Push and pull_request runs use the pinned baseline, so a red build means the
-# change broke something, not that a new compiler came out. 0.307.0 is the
-# first release whose `bynkc fmt` accepts a directory. Bump it deliberately.
+# change broke something, not that a new compiler came out. Bump it
+# deliberately. 0.307.0 is the first release whose `bynkc fmt` accepts a
+# directory, and 0.309.0 the first whose `bynkc test` runs on Windows.
 #
 # Each fixture under test/fixtures fails exactly one check:
 #   good          passes fmt, check and test (src/ + tests/)
@@ -31,7 +32,7 @@ permissions:
 #   type-error    fails check (and so test)
 #   failing-test  fails test only
 env:
-  BYNK_VERSION: ${{ inputs.version || '0.307.0' }}
+  BYNK_VERSION: ${{ inputs.version || '0.309.0' }}
 
 jobs:
   pass:
@@ -47,16 +48,12 @@ jobs:
           persist-credentials: false
 
       # The project root as `source`: fmt, check and test all see src/ and tests/.
-      # `bynkc test` is off on Windows: bynkc finds npm's `tsc.cmd` but spawns
-      # the bare name `tsc`, which Rust's Command resolves to `tsc.exe` only.
-      # Re-enable once bynkc spawns the path it resolved.
       - name: bynk-ci on the project root
         uses: ./
         with:
           version: ${{ env.BYNK_VERSION }}
           working-directory: test/fixtures/good
           source: .
-          test: ${{ runner.os == 'Windows' && 'false' || 'true' }}
 
       # The action's default `source`, a directory under the project.
       - name: bynk-ci with source src
@@ -65,7 +62,6 @@ jobs:
           version: ${{ env.BYNK_VERSION }}
           working-directory: test/fixtures/good
           source: src
-          test: ${{ runner.os == 'Windows' && 'false' || 'true' }}
 
       - name: The checks left nothing tracked behind
         shell: bash
