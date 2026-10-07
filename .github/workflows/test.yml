@@ -24,7 +24,8 @@ permissions:
 # Push and pull_request runs use the pinned baseline, so a red build means the
 # change broke something, not that a new compiler came out. Bump it
 # deliberately. 0.307.0 is the first release whose `bynkc fmt` accepts a
-# directory, and 0.309.0 the first whose `bynkc test` runs on Windows.
+# directory, 0.309.0 the first whose `bynkc test` runs on Windows, and
+# 0.309.3 the first that reports paths as typed from the working directory.
 #
 # Each fixture under test/fixtures fails exactly one check:
 #   good          passes fmt, check and test (src/ + tests/)
@@ -32,7 +33,7 @@ permissions:
 #   type-error    fails check (and so test)
 #   failing-test  fails test only
 env:
-  BYNK_VERSION: ${{ inputs.version || '0.309.0' }}
+  BYNK_VERSION: ${{ inputs.version || '0.309.3' }}
 
 jobs:
   pass:
@@ -115,6 +116,17 @@ jobs:
           check: "false"
           test: "false"
 
+      - name: Type error, source src
+        id: type-error-src
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/type-error
+          source: src
+          format: "false"
+          test: "false"
+
       - name: Failing test
         id: failing-test
         continue-on-error: true
@@ -141,6 +153,7 @@ jobs:
           UNFORMATTED_NO_FORMAT: ${{ steps.unformatted-no-format.outcome }}
           TYPE_ERROR: ${{ steps.type-error.outcome }}
           TYPE_ERROR_FORMAT_ONLY: ${{ steps.type-error-format-only.outcome }}
+          TYPE_ERROR_SRC: ${{ steps.type-error-src.outcome }}
           FAILING_TEST: ${{ steps.failing-test.outcome }}
           FAILING_TEST_NO_TEST: ${{ steps.failing-test-no-test.outcome }}
         run: |
@@ -153,21 +166,20 @@ jobs:
           expect "unformatted, format: false" "$UNFORMATTED_NO_FORMAT" success
           expect "type error" "$TYPE_ERROR" failure
           expect "type error, format check only" "$TYPE_ERROR_FORMAT_ONLY" success
+          expect "type error, source src" "$TYPE_ERROR_SRC" failure
           expect "failing test" "$FAILING_TEST" failure
           expect "failing test, test: false" "$FAILING_TEST_NO_TEST" success
           exit "$failed"
 
       # bynkc is on PATH from the steps above. The annotations depend on
-      # `bynkc check --format short` matching the problem matcher's regexp, so
-      # check that a diagnostic parses into the fields the matcher reads.
-      # `file` is relative to the directory bynkc was given (here the project
-      # root), not to the repository, so this pins today's behaviour.
+      # `bynkc check --format short` matching the problem matcher's regexp, and
+      # on its path being the file as typed from the working directory. Run from
+      # the repository root, as the action does.
       - name: The problem matcher parses a diagnostic
         shell: bash
-        working-directory: test/fixtures/type-error
         run: |
           # The check is meant to fail here; it's the output that's under test.
-          out="$(bynkc check --format short . 2>&1)" || true
+          out="$(bynkc check --format short test/fixtures/type-error 2>&1)" || true
           echo "$out"
           MATCHER="$GITHUB_WORKSPACE/bynk-problem-matcher.json" OUT="$out" node -e '
             const m = require(process.env.MATCHER).problemMatcher[0].pattern[0];
@@ -176,10 +188,46 @@ jobs:
             if (!hit) { console.log("::error::no line of bynkc check output matches the problem matcher"); process.exit(1); }
             const got = { file: hit[m.file], line: hit[m.line], column: hit[m.column],
                           severity: hit[m.severity], code: hit[m.code] };
-            const want = { file: "src/greeting.bynk", line: "6", column: "36",
+            const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "6", column: "36",
                            severity: "error", code: "bynk.types.return_mismatch" };
             console.log(JSON.stringify(got));
             for (const k of Object.keys(want)) {
               if (got[k] !== want[k]) { console.log(`::error::matcher ${k} is ${got[k]}, expected ${want[k]}`); process.exitCode = 1; }
             }
           '
+
+  # End to end: the annotations GitHub recorded on the job above, for the type
+  # error the action checked with `source: .` and with `source: src`, must name
+  # the file relative to the repository, so they land on the right line of a PR.
+  annotations:
+    name: Annotations name the right file
+    needs: refuse
+    # Whenever the refuse job ran, pass or fail: its annotations are what's
+    # under test here, and a path regression fails the matcher test there too.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+    steps:
+      - name: Assert on the refuse job's annotations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          job="$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --paginate \
+            --jq '.jobs[] | select(.name | endswith("Each check fails what it should")) | .id' | head -n1)"
+          [ -n "$job" ] || { echo "::error::could not find the refuse job in this run"; exit 1; }
+          notes="$(gh api "repos/$REPO/check-runs/$job/annotations" --paginate \
+            --jq '.[] | select(.message | contains("return_mismatch") or contains("declared return type")) | "\(.path):\(.start_line)"')"
+          echo "$notes"
+          want="test/fixtures/type-error/src/greeting.bynk:6"
+          [ -n "$notes" ] || { echo "::error::no annotation for the type error"; exit 1; }
+          bad="$(grep -vxF "$want" <<<"$notes" || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::type-error annotations on the wrong file: $(tr '\n' ' ' <<<"$bad")"; exit 1
+          fi
+          echo "All $(wc -l <<<"$notes") type-error annotations are on $want"
