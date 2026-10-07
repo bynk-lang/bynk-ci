@@ -202,6 +202,9 @@ jobs:
   annotations:
     name: Annotations name the right file
     needs: refuse
+    # Whenever the refuse job ran, pass or fail: its annotations are what's
+    # under test here, and a path regression fails the matcher test there too.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
