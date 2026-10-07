@@ -33,11 +33,23 @@ jobs:
 | A directory `source` for the format check | 0.307.0 |
 | `bynkc test` on Windows | 0.309.0 |
 | Annotations on the right file when `working-directory` or `source` isn't `.` | 0.309.3 |
+| The format check on a Windows (CRLF) checkout without a `.gitattributes` | 0.309.4 |
 
 Before 0.309.3, `bynkc check` named each file relative to the directory it was
 given, so with the default `source: src` an annotation pointed at
 `greeting.bynk` instead of `src/greeting.bynk`, and GitHub couldn't place it on
 the changed line. The check still failed the step; only the annotation was lost.
+
+Before 0.309.4, `bynkc fmt --check` treated CRLF line endings as a formatting
+difference, and Git for Windows checks files out with CRLF by default
+(`core.autocrlf`). On an older version, keep `.bynk` files LF on every checkout
+with a `.gitattributes` line, as this repository does:
+
+```gitattributes
+*.bynk text eol=lf
+```
+
+`bynk new` writes that file for new projects from 0.309.4.
 
 ### A directory `source` before 0.307.0
 
