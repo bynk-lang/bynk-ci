@@ -50,7 +50,3 @@ jobs:
       kind: action
       working-directory: test/fixtures/good
       source: .
-    secrets:
-      # Optional: report results to the compat board. Skipped unless both are set.
-      report-url: ${{ secrets.BYNK_CANARY_REPORT_URL }}
-      report-key: ${{ secrets.BYNK_CANARY_REPORT_KEY }}
