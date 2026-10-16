@@ -55,7 +55,7 @@ with a `.gitattributes` line, as this repository does:
 
 The format check runs `bynkc fmt --check <source>`. `bynkc fmt` accepts a
 directory from **Bynk 0.307.0**
-([accuser/bynk#1753](https://github.com/accuser/bynk/issues/1753)); before
+([bynk-lang/bynk#1753](https://github.com/bynk-lang/bynk/issues/1753)); before
 that it took files only, and a directory `source` failed the format step with
 "Is a directory". On an older version, either pass a single file as `source` or
 turn the format check off with `format: "false"`.
@@ -75,7 +75,7 @@ Run only some checks:
 | Input               | Default        | Description |
 | ------------------- | -------------- | ----------- |
 | `version`           | `latest`       | Bynk version (forwarded to setup-bynk). |
-| `repository`        | `accuser/bynk` | Release repository. |
+| `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
 | `source`            | `src`          | Path passed to `bynkc` (file or directory). A directory needs Bynk 0.307.0 or later for the format check. |
 | `format`            | `true`         | Run `bynkc fmt --check`. |

@@ -15,7 +15,7 @@ inputs:
   repository:
     description: The owner/name repo that publishes Bynk releases.
     required: false
-    default: accuser/bynk
+    default: bynk-lang/bynk
   working-directory:
     description: Directory to run the checks in.
     required: false
@@ -64,7 +64,7 @@ runs:
     # Run from the repository root on <working-directory>/<source>, so each
     # diagnostic names its file relative to the repository and the problem
     # matcher annotates the right file. Needs Bynk 0.309.3 or later, which
-    # reports paths as typed from the working directory (accuser/bynk#1772).
+    # reports paths as typed from the working directory (bynk-lang/bynk#1772).
     - name: Type check
       if: inputs.check == 'true'
       shell: bash
