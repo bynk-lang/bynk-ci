@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: bynk-lang/bynk-ci@v1
         with:
-          version: 0.307.0
+          version: 0.377.2
           source: .
 ```
 
