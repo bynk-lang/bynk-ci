@@ -33,7 +33,7 @@ permissions:
 #   type-error    fails check (and so test)
 #   failing-test  fails test only
 env:
-  BYNK_VERSION: ${{ inputs.version || '0.377.2' }}
+  BYNK_VERSION: ${{ inputs.version || '0.403.3' }}
 
 jobs:
   pass:
@@ -188,7 +188,7 @@ jobs:
             if (!hit) { console.log("::error::no line of bynkc check output matches the problem matcher"); process.exit(1); }
             const got = { file: hit[m.file], line: hit[m.line], column: hit[m.column],
                           severity: hit[m.severity], code: hit[m.code] };
-            const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "6", column: "36",
+            const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "7", column: "2",
                            severity: "error", code: "bynk.types.return_mismatch" };
             console.log(JSON.stringify(got));
             for (const k of Object.keys(want)) {
@@ -224,7 +224,7 @@ jobs:
           notes="$(gh api "repos/$REPO/check-runs/$job/annotations" --paginate \
             --jq '.[] | select(.message | contains("return_mismatch") or contains("declared return type")) | "\(.path):\(.start_line)"')"
           echo "$notes"
-          want="test/fixtures/type-error/src/greeting.bynk:6"
+          want="test/fixtures/type-error/src/greeting.bynk:7"
           [ -n "$notes" ] || { echo "::error::no annotation for the type error"; exit 1; }
           bad="$(grep -vxF "$want" <<<"$notes" || true)"
           if [ -n "$bad" ]; then
