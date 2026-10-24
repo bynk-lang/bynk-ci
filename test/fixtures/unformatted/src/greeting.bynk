@@ -3,6 +3,4 @@ context greeting
 ---
 Valid, but not canonically formatted.
 ---
-fn greet(name: String) -> String {
-	"Hello, \(name)!"
-}
+fn   greet( name : String )->String{ "Hello, \(name)!" }
