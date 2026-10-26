@@ -75,6 +75,7 @@ Run only some checks:
 | Input               | Default        | Description |
 | ------------------- | -------------- | ----------- |
 | `version`           | `latest`       | Bynk version (forwarded to setup-bynk). |
+| `version-file`      | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Use this or `version`, not both. |
 | `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
 | `source`            | `src`          | Path passed to `bynkc` (file or directory). A directory needs Bynk 0.307.0 or later for the format check. |
