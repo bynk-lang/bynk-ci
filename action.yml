@@ -28,19 +28,19 @@ inputs:
     required: false
     default: "."
   source:
-    description: Source path passed to bynkc (file or directory).
+    description: Source path passed to bynk (file or directory).
     required: false
     default: src
   format:
-    description: Run `bynkc fmt --check`.
+    description: Run `bynk fmt --check`.
     required: false
     default: "true"
   check:
-    description: Run `bynkc check --format short`.
+    description: Run `bynk check --format short`.
     required: false
     default: "true"
   test:
-    description: Run `bynkc test`.
+    description: Run `bynk test`.
     required: false
     default: "true"
   github-token:
@@ -88,7 +88,7 @@ runs:
       if: inputs.format == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: bynkc fmt --check ${{ inputs.source }}
+      run: bynk fmt --check ${{ inputs.source }}
 
     # Run from the repository root on <working-directory>/<source>, so each
     # diagnostic names its file relative to the repository and the problem
@@ -110,13 +110,13 @@ runs:
             else path="$dir/$INPUT_SOURCE"
             fi ;;
         esac
-        bynkc check --format short "$path"
+        bynk check --format short "$path"
 
     - name: Test
       if: inputs.test == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: bynkc test ${{ inputs.source }}
+      run: bynk test ${{ inputs.source }}
 
     - name: Disable Bynk problem matcher
       if: always()

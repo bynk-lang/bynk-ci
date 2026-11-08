@@ -23,8 +23,8 @@ permissions:
 
 # Push and pull_request runs use the version in BYNK_VERSION, so a red build
 # means the change broke something, not that a new compiler came out. The
-# canary proposes moving it once a newer release passes. 0.307.0 is the first release whose `bynkc fmt` accepts a
-# directory, 0.309.0 the first whose `bynkc test` runs on Windows, and
+# canary proposes moving it once a newer release passes. 0.307.0 is the first release whose `bynk fmt` accepts a
+# directory, 0.309.0 the first whose `bynk test` runs on Windows, and
 # 0.309.3 the first that reports paths as typed from the working directory.
 #
 # Each fixture under test/fixtures fails exactly one check:
@@ -180,21 +180,21 @@ jobs:
           expect "failing test, test: false" "$FAILING_TEST_NO_TEST" success
           exit "$failed"
 
-      # bynkc is on PATH from the steps above. The annotations depend on
-      # `bynkc check --format short` matching the problem matcher's regexp, and
+      # bynk is on PATH from the steps above. The annotations depend on
+      # `bynk check --format short` matching the problem matcher's regexp, and
       # on its path being the file as typed from the working directory. Run from
       # the repository root, as the action does.
       - name: The problem matcher parses a diagnostic
         shell: bash
         run: |
           # The check is meant to fail here; it's the output that's under test.
-          out="$(bynkc check --format short test/fixtures/type-error 2>&1)" || true
+          out="$(bynk check --format short test/fixtures/type-error 2>&1)" || true
           echo "$out"
           MATCHER="$GITHUB_WORKSPACE/bynk-problem-matcher.json" OUT="$out" node -e '
             const m = require(process.env.MATCHER).problemMatcher[0].pattern[0];
             const re = new RegExp(m.regexp);
             const hit = process.env.OUT.split("\n").map(l => l.match(re)).find(Boolean);
-            if (!hit) { console.log("::error::no line of bynkc check output matches the problem matcher"); process.exit(1); }
+            if (!hit) { console.log("::error::no line of bynk check output matches the problem matcher"); process.exit(1); }
             const got = { file: hit[m.file], line: hit[m.line], column: hit[m.column],
                           severity: hit[m.severity], code: hit[m.code] };
             const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "7", column: "2",
@@ -285,8 +285,8 @@ jobs:
           MISSING: ${{ steps.missing.outcome }}
         run: |
           failed=0
-          want="bynkc $(tr -d '[:space:]' < BYNK_VERSION)"; want="${want/bynkc v/bynkc }"
-          got="$(bynkc --version)"
+          want="bynk $(tr -d '[:space:]' < BYNK_VERSION)"; want="${want/bynk v/bynk }"
+          got="$(bynk --version)"
           [ "$got" = "$want" ] || { echo "::error::installed '$got', BYNK_VERSION says '$want'"; failed=1; }
           [ "$BOTH" = failure ] || { echo "::error::version-file with version was '$BOTH', expected failure"; failed=1; }
           [ "$MISSING" = failure ] || { echo "::error::a missing version-file was '$MISSING', expected failure"; failed=1; }

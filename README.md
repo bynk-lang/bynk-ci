@@ -2,8 +2,10 @@
 
 The standard Bynk quality gate in one step: format check, type check, and tests.
 Installs the toolchain via [`setup-bynk`](https://github.com/bynk-lang/setup-bynk)
-and annotates `bynkc` diagnostics inline on the pull request via a problem
+and annotates `bynk` diagnostics inline on the pull request via a problem
 matcher.
+
+**It needs Bynk 0.512.9 or later** (setup-bynk v2 installs `bynk` and `bynk-lsp`, not `bynkc`). Pin an earlier bynk-ci release for older Bynk versions.
 
 ## Usage
 
@@ -22,25 +24,25 @@ jobs:
           source: .
 ```
 
-`source: .` is the project root: `bynkc` then checks and tests the project's
+`source: .` is the project root: `bynk` then checks and tests the project's
 `[paths] include` trees (by default `src/` and `tests/`). With `source: src`,
-`bynkc test` doesn't see a `tests/` directory.
+`bynk test` doesn't see a `tests/` directory.
 
 ### Minimum Bynk versions
 
 | Feature | Bynk |
 | --- | --- |
 | A directory `source` for the format check | 0.307.0 |
-| `bynkc test` on Windows | 0.309.0 |
+| `bynk test` on Windows | 0.309.0 |
 | Annotations on the right file when `working-directory` or `source` isn't `.` | 0.309.3 |
 | The format check on a Windows (CRLF) checkout without a `.gitattributes` | 0.309.4 |
 
-Before 0.309.3, `bynkc check` named each file relative to the directory it was
+Before 0.309.3, `bynk check` named each file relative to the directory it was
 given, so with the default `source: src` an annotation pointed at
 `greeting.bynk` instead of `src/greeting.bynk`, and GitHub couldn't place it on
 the changed line. The check still failed the step; only the annotation was lost.
 
-Before 0.309.4, `bynkc fmt --check` treated CRLF line endings as a formatting
+Before 0.309.4, `bynk fmt --check` treated CRLF line endings as a formatting
 difference, and Git for Windows checks files out with CRLF by default
 (`core.autocrlf`). On an older version, keep `.bynk` files LF on every checkout
 with a `.gitattributes` line, as this repository does:
@@ -53,7 +55,7 @@ with a `.gitattributes` line, as this repository does:
 
 ### A directory `source` before 0.307.0
 
-The format check runs `bynkc fmt --check <source>`. `bynkc fmt` accepts a
+The format check runs `bynk fmt --check <source>`. `bynk fmt` accepts a
 directory from **Bynk 0.307.0**
 ([bynk-lang/bynk#1753](https://github.com/bynk-lang/bynk/issues/1753)); before
 that it took files only, and a directory `source` failed the format step with
@@ -78,15 +80,15 @@ Run only some checks:
 | `version-file`      | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Use this or `version`, not both. |
 | `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
-| `source`            | `src`          | Path passed to `bynkc` (file or directory). A directory needs Bynk 0.307.0 or later for the format check. |
-| `format`            | `true`         | Run `bynkc fmt --check`. |
-| `check`             | `true`         | Run `bynkc check --format short`. |
-| `test`              | `true`         | Run `bynkc test`. |
+| `source`            | `src`          | Path passed to `bynk` (file or directory). A directory needs Bynk 0.307.0 or later for the format check. |
+| `format`            | `true`         | Run `bynk fmt --check`. |
+| `check`             | `true`         | Run `bynk check --format short`. |
+| `test`              | `true`         | Run `bynk test`. |
 | `github-token`      | `${{ github.token }}` | Token for setup-bynk. |
 
 ## How annotations work
 
-`bynkc check --format short` emits one diagnostic per line as
+`bynk check --format short` emits one diagnostic per line as
 `path:line:col: severity[category]: message`. The bundled
 [`bynk-problem-matcher.json`](bynk-problem-matcher.json) parses that form so
 errors and warnings appear directly on the changed lines in the PR.
