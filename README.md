@@ -5,6 +5,8 @@ Installs the toolchain via [`setup-bynk`](https://github.com/bynk-lang/setup-byn
 and annotates `bynk` diagnostics inline on the pull request via a problem
 matcher.
 
+**It needs Bynk 0.512.9 or later** (setup-bynk v2 installs `bynk` and `bynk-lsp`, not `bynkc`). Pin an earlier bynk-ci release for older Bynk versions.
+
 ## Usage
 
 ```yaml
