@@ -17,12 +17,14 @@ jobs:
   bynk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: bynk-lang/bynk-ci@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: bynk-lang/bynk-ci@16971dbe8db701e2cd3905f68f9e2f50e84ab366 # v1.2.1
         with:
           version: 0.403.3
           source: .
 ```
+
+> The org requires actions pinned to a full commit SHA, so these examples name the commit for `v1.2.1` with the version in a comment, which Dependabot reads to propose updates. To pin another release, find its commit with `git ls-remote https://github.com/bynk-lang/bynk-ci 'refs/tags/v*^{}'`.
 
 `source: .` is the project root: `bynk` then checks and tests the project's
 `[paths] include` trees (by default `src/` and `tests/`). With `source: src`,
@@ -65,7 +67,7 @@ turn the format check off with `format: "false"`.
 Run only some checks:
 
 ```yaml
-- uses: bynk-lang/bynk-ci@v1
+- uses: bynk-lang/bynk-ci@16971dbe8db701e2cd3905f68f9e2f50e84ab366 # v1.2.1
   with:
     format: "true"
     check: "true"
