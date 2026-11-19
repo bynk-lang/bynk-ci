@@ -23,9 +23,7 @@ permissions:
 
 # Push and pull_request runs use the version in BYNK_VERSION, so a red build
 # means the change broke something, not that a new compiler came out. The
-# canary proposes moving it once a newer release passes. 0.307.0 is the first release whose `bynk fmt` accepts a
-# directory, 0.309.0 the first whose `bynk test` runs on Windows, and
-# 0.309.3 the first that reports paths as typed from the working directory.
+# canary proposes moving it once a newer release passes.
 #
 # Each fixture under test/fixtures fails exactly one check:
 #   good          passes fmt, check and test (src/ + tests/)
