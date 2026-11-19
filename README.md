@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: bynk-lang/bynk-ci@16971dbe8db701e2cd3905f68f9e2f50e84ab366 # v1.2.1
         with:
-          version: 0.403.3
+          version: 0.639.1
           source: .
 ```
 
@@ -29,40 +29,6 @@ jobs:
 `source: .` is the project root: `bynk` then checks and tests the project's
 `[paths] include` trees (by default `src/` and `tests/`). With `source: src`,
 `bynk test` doesn't see a `tests/` directory.
-
-### Minimum Bynk versions
-
-| Feature | Bynk |
-| --- | --- |
-| A directory `source` for the format check | 0.307.0 |
-| `bynk test` on Windows | 0.309.0 |
-| Annotations on the right file when `working-directory` or `source` isn't `.` | 0.309.3 |
-| The format check on a Windows (CRLF) checkout without a `.gitattributes` | 0.309.4 |
-
-Before 0.309.3, `bynk check` named each file relative to the directory it was
-given, so with the default `source: src` an annotation pointed at
-`greeting.bynk` instead of `src/greeting.bynk`, and GitHub couldn't place it on
-the changed line. The check still failed the step; only the annotation was lost.
-
-Before 0.309.4, `bynk fmt --check` treated CRLF line endings as a formatting
-difference, and Git for Windows checks files out with CRLF by default
-(`core.autocrlf`). On an older version, keep `.bynk` files LF on every checkout
-with a `.gitattributes` line, as this repository does:
-
-```gitattributes
-*.bynk text eol=lf
-```
-
-`bynk new` writes that file for new projects from 0.309.4.
-
-### A directory `source` before 0.307.0
-
-The format check runs `bynk fmt --check <source>`. `bynk fmt` accepts a
-directory from **Bynk 0.307.0**
-([bynk-lang/bynk#1753](https://github.com/bynk-lang/bynk/issues/1753)); before
-that it took files only, and a directory `source` failed the format step with
-"Is a directory". On an older version, either pass a single file as `source` or
-turn the format check off with `format: "false"`.
 
 Run only some checks:
 
@@ -82,7 +48,7 @@ Run only some checks:
 | `version-file`      | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Use this or `version`, not both. |
 | `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
-| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. Must not be empty while any check is on: from v2, `source: ""` (for example from an unset `vars.` value) fails the action before Bynk is installed. Use `source: .` for the project root. See [Upgrading from v1](#upgrading-from-v1). A directory needs Bynk 0.307.0 or later for the format check. |
+| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. Must not be empty while any check is on: from v2, `source: ""` (for example from an unset `vars.` value) fails the action before Bynk is installed. Use `source: .` for the project root. See [Upgrading from v1](#upgrading-from-v1). |
 | `format`            | `true`         | Run `bynk fmt --check`. |
 | `check`             | `true`         | Run `bynk check --format short`. |
 | `test`              | `true`         | Run `bynk test`. |

@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Bynk version, exact ("0.307.0") or "latest"
+        description: Bynk version, exact ("0.639.1") or "latest"
         type: string
         default: latest
 
