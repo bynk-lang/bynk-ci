@@ -285,7 +285,8 @@ jobs:
           working-directory: test/fixtures/good
           source: ""
 
-      - name: Assert
+      # Before the next case, which installs Bynk.
+      - name: Assert it failed before installing Bynk
         shell: bash
         env:
           EMPTY: ${{ steps.empty.outcome }}
@@ -299,6 +300,27 @@ jobs:
             echo "::error::Bynk was installed, so the empty source didn't stop the action early"; failed=1
           else echo "ok: the action stopped before installing Bynk"; fi
           exit "$failed"
+
+      # With every check off nothing uses source, so an empty one is fine.
+      - name: bynk-ci with an empty source and every check off
+        id: empty-all-off
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: ""
+          format: "false"
+          check: "false"
+          test: "false"
+
+      - name: Assert every check off passes
+        shell: bash
+        env:
+          ALL_OFF: ${{ steps.empty-all-off.outcome }}
+        run: |
+          if [ "$ALL_OFF" = success ]; then echo "ok: an empty source, every check off = success"
+          else echo "::error::an empty source with every check off was '$ALL_OFF', expected 'success'"; exit 1; fi
 
   # End to end: the annotations GitHub recorded on the refuse job, for the type
   # error the action checked with `source: .` and with `source: src`, must name

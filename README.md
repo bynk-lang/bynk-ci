@@ -82,11 +82,26 @@ Run only some checks:
 | `version-file`      | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Use this or `version`, not both. |
 | `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
-| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. Must not be empty: `source: ""` (for example from an unset `vars.` value) fails the action before Bynk is installed. Use `source: .` for the project root. A directory needs Bynk 0.307.0 or later for the format check. |
+| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. Must not be empty while any check is on: from v2, `source: ""` (for example from an unset `vars.` value) fails the action before Bynk is installed. Use `source: .` for the project root. See [Upgrading from v1](#upgrading-from-v1). A directory needs Bynk 0.307.0 or later for the format check. |
 | `format`            | `true`         | Run `bynk fmt --check`. |
 | `check`             | `true`         | Run `bynk check --format short`. |
 | `test`              | `true`         | Run `bynk test`. |
 | `github-token`      | `${{ github.token }}` | Token for setup-bynk. |
+
+## Upgrading from v1
+
+v2 changes how `source` is read. Check your workflow before moving to it:
+
+- **An empty `source` fails.** In v1, `source: ""` ran each check with no
+  path, or with the working directory as the path, so it could pass much as
+  `source: .` does. In v2 it fails at once with
+  `bynk-ci: source must not be empty`, unless `format`, `check` and `test`
+  are all `"false"`. This most often comes from an unset `vars.` value. Set
+  `source: .` for the project root, or give the variable a value.
+- **`source` is one path, taken literally.** In v1, spaces split `source` into
+  several paths and shell characters in it ran as shell. In v2 the whole
+  value is one path. If you passed several space-separated paths, pass their
+  common directory instead.
 
 ## How annotations work
 

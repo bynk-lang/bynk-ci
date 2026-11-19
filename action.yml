@@ -75,8 +75,10 @@ runs:
 
     # An empty source (often an unset `vars.` value) would hand bynk an empty
     # path, and the type check would run on "<working-directory>/". Fail
-    # before installing anything instead.
+    # before installing anything instead. Skipped when no check uses source.
+    # Failing here is new in v2: in v1 an empty source ran the checks.
     - name: Check the source input
+      if: inputs.format == 'true' || inputs.check == 'true' || inputs.test == 'true'
       shell: bash
       env:
         INPUT_SOURCE: ${{ inputs.source }}
