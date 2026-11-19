@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: bynk-lang/bynk-ci@16971dbe8db701e2cd3905f68f9e2f50e84ab366 # v1.2.1
         with:
-          version: 0.403.3
+          version: 0.639.1
           source: .
 ```
 
