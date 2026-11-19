@@ -240,7 +240,7 @@ jobs:
               break
             fi
           done
-          [ -n "$job" ] || { echo "::error::could not find the refuse job in this run"; exit 1; }
+          [ -n "$job" ] || { echo "::error::could not find a completed refuse job in attempts $ATTEMPT to 1 of this run"; exit 1; }
           notes="$(gh api "repos/$REPO/check-runs/$job/annotations" --paginate \
             --jq '.[] | select(.message | contains("return_mismatch") or contains("declared return type")) | "\(.path):\(.start_line)"')"
           echo "$notes"
