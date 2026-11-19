@@ -261,6 +261,67 @@ jobs:
           done
           exit "$failed"
 
+  # An empty source, as from an unset `vars.` value, fails before Bynk is
+  # installed rather than handing bynk an empty path. Its own job, so the
+  # refuse job's annotations stay as the annotations job expects.
+  empty-source:
+    name: An empty source fails early
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Choose the Bynk version
+        shell: bash
+        run: echo "BYNK_VERSION=${REQUESTED:-$(tr -d '[:space:]' < BYNK_VERSION)}" >> "$GITHUB_ENV"
+
+      - name: bynk-ci with an empty source
+        id: empty
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: ""
+
+      # Before the next case, which installs Bynk.
+      - name: Assert it failed before installing Bynk
+        shell: bash
+        env:
+          EMPTY: ${{ steps.empty.outcome }}
+        run: |
+          failed=0
+          if [ "$EMPTY" = failure ]; then echo "ok: an empty source = failure"
+          else echo "::error::an empty source was '$EMPTY', expected 'failure'"; failed=1; fi
+          # Bynk isn't on the runner image, so finding it means the action got
+          # past the source check to the install step.
+          if command -v bynk >/dev/null; then
+            echo "::error::Bynk was installed, so the empty source didn't stop the action early"; failed=1
+          else echo "ok: the action stopped before installing Bynk"; fi
+          exit "$failed"
+
+      # With every check off nothing uses source, so an empty one is fine.
+      - name: bynk-ci with an empty source and every check off
+        id: empty-all-off
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: ""
+          format: "false"
+          check: "false"
+          test: "false"
+
+      - name: Assert every check off passes
+        shell: bash
+        env:
+          ALL_OFF: ${{ steps.empty-all-off.outcome }}
+        run: |
+          if [ "$ALL_OFF" = success ]; then echo "ok: an empty source, every check off = success"
+          else echo "::error::an empty source with every check off was '$ALL_OFF', expected 'success'"; exit 1; fi
+
   # End to end: the annotations GitHub recorded on the refuse job, for the type
   # error the action checked with `source: .` and with `source: src`, must name
   # the file relative to the repository, so they land on the right line of a PR.
