@@ -73,6 +73,20 @@ runs:
         fi
         echo "version=$want" >> "$GITHUB_OUTPUT"
 
+    # An empty source (often an unset `vars.` value) would hand bynk an empty
+    # path, and the type check would run on "<working-directory>/". Fail
+    # before installing anything instead.
+    - name: Check the source input
+      shell: bash
+      env:
+        INPUT_SOURCE: ${{ inputs.source }}
+      run: |
+        set -euo pipefail
+        if [ -z "$INPUT_SOURCE" ]; then
+          echo "::error::bynk-ci: source must not be empty" >&2
+          exit 1
+        fi
+
     - name: Install Bynk
       uses: bynk-lang/setup-bynk@3ee807123be2578fd5d5be518fbc2b489aef6171 # v2.0.1
       with:

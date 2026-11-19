@@ -82,7 +82,7 @@ Run only some checks:
 | `version-file`      | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Use this or `version`, not both. |
 | `repository`        | `bynk-lang/bynk` | Release repository. |
 | `working-directory` | `.`            | Directory to run in. |
-| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. A directory needs Bynk 0.307.0 or later for the format check. |
+| `source`            | `src`          | One path passed to `bynk` (file or directory), taken literally: spaces and shell characters are part of the path. Must not be empty: `source: ""` (for example from an unset `vars.` value) fails the action before Bynk is installed. Use `source: .` for the project root. A directory needs Bynk 0.307.0 or later for the format check. |
 | `format`            | `true`         | Run `bynk fmt --check`. |
 | `check`             | `true`         | Run `bynk check --format short`. |
 | `test`              | `true`         | Run `bynk test`. |
