@@ -68,6 +68,19 @@ jobs:
           working-directory: test/fixtures/good
           source: src
 
+      # A `source` with a space is one path, not two arguments (bynk-ci#47).
+      # The copy is untracked, so the next step doesn't see it.
+      - name: A source directory with a space in its name
+        shell: bash
+        run: cp -R test/fixtures/good/src "test/fixtures/good/src with space"
+
+      - name: bynk-ci with a source containing a space
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: src with space
+
       - name: The checks left nothing tracked behind
         shell: bash
         run: git diff --exit-code -- test/fixtures
@@ -205,7 +218,50 @@ jobs:
             }
           '
 
-  # End to end: the annotations GitHub recorded on the job above, for the type
+  # A crafted `source` is one literal path to bynk, never shell (bynk-ci#47).
+  # The path exists, a copy of good/src named after the payload, so the action
+  # must pass: a pass shows bynk ran on that path, and no marker file shows
+  # the payload didn't run. Linux only, where `$` and `;` are valid in a name;
+  # no `/`, so the markers are relative, in the working directory. A job of its own, so it adds nothing to the annotations the
+  # annotations job reads from the refuse job.
+  injection:
+    name: A source is never run as shell
+    runs-on: ubuntu-latest
+    env:
+      PAYLOAD: 'src $(touch injected-substitution); touch injected-semicolon'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Choose the Bynk version
+        shell: bash
+        run: echo "BYNK_VERSION=${REQUESTED:-$(tr -d '[:space:]' < BYNK_VERSION)}" >> "$GITHUB_ENV"
+
+      - name: A source directory named after the payload
+        shell: bash
+        run: cp -R test/fixtures/good/src "test/fixtures/good/$PAYLOAD"
+
+      - name: bynk-ci with the payload as source
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: ${{ env.PAYLOAD }}
+
+      - name: The payload did not run
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          failed=0
+          for f in injected-substitution injected-semicolon; do
+            if [ -e "test/fixtures/good/$f" ]; then
+              echo "::error::a source containing shell ran it: test/fixtures/good/$f exists"; failed=1
+            else echo "ok: shell in source did not run ($f)"; fi
+          done
+          exit "$failed"
+
+  # End to end: the annotations GitHub recorded on the refuse job, for the type
   # error the action checked with `source: .` and with `source: src`, must name
   # the file relative to the repository, so they land on the right line of a PR.
   annotations:

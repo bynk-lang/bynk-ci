@@ -84,11 +84,15 @@ runs:
       shell: bash
       run: echo "::add-matcher::${{ github.action_path }}/bynk-problem-matcher.json"
 
+    # Inputs reach the shell through env: and are quoted, never as ${{ }} in
+    # the script, so a crafted value can't become a command (bynk-ci#47).
     - name: Format check
       if: inputs.format == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: bynk fmt --check ${{ inputs.source }}
+      env:
+        INPUT_SOURCE: ${{ inputs.source }}
+      run: bynk fmt --check "$INPUT_SOURCE"
 
     # Run from the repository root on <working-directory>/<source>, so each
     # diagnostic names its file relative to the repository and the problem
@@ -116,7 +120,9 @@ runs:
       if: inputs.test == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: bynk test ${{ inputs.source }}
+      env:
+        INPUT_SOURCE: ${{ inputs.source }}
+      run: bynk test "$INPUT_SOURCE"
 
     - name: Disable Bynk problem matcher
       if: always()
