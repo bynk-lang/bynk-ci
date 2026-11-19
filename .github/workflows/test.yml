@@ -68,6 +68,19 @@ jobs:
           working-directory: test/fixtures/good
           source: src
 
+      # A `source` with a space is one path, not two arguments (bynk-ci#47).
+      # The copy is untracked, so the next step doesn't see it.
+      - name: A source directory with a space in its name
+        shell: bash
+        run: cp -R test/fixtures/good/src "test/fixtures/good/src with space"
+
+      - name: bynk-ci with a source containing a space
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: src with space
+
       - name: The checks left nothing tracked behind
         shell: bash
         run: git diff --exit-code -- test/fixtures
@@ -155,6 +168,42 @@ jobs:
           source: .
           test: "false"
 
+      # A crafted `source` is passed to bynk as a literal path, which doesn't
+      # exist, so each check fails; it never runs as shell (bynk-ci#47). Each
+      # check on its own, so a later one isn't skipped by an earlier failure.
+      - name: Shell in source, format check
+        id: injection-format
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: 'src $(touch "$RUNNER_TEMP/injected-substitution"); touch "$RUNNER_TEMP/injected-semicolon"'
+          check: "false"
+          test: "false"
+
+      - name: Shell in source, type check
+        id: injection-check
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: 'src $(touch "$RUNNER_TEMP/injected-substitution"); touch "$RUNNER_TEMP/injected-semicolon"'
+          format: "false"
+          test: "false"
+
+      - name: Shell in source, tests
+        id: injection-test
+        continue-on-error: true
+        uses: ./
+        with:
+          version: ${{ env.BYNK_VERSION }}
+          working-directory: test/fixtures/good
+          source: 'src $(touch "$RUNNER_TEMP/injected-substitution"); touch "$RUNNER_TEMP/injected-semicolon"'
+          format: "false"
+          check: "false"
+
       - name: Assert the outcomes
         shell: bash
         env:
@@ -165,6 +214,9 @@ jobs:
           TYPE_ERROR_SRC: ${{ steps.type-error-src.outcome }}
           FAILING_TEST: ${{ steps.failing-test.outcome }}
           FAILING_TEST_NO_TEST: ${{ steps.failing-test-no-test.outcome }}
+          INJECTION_FORMAT: ${{ steps.injection-format.outcome }}
+          INJECTION_CHECK: ${{ steps.injection-check.outcome }}
+          INJECTION_TEST: ${{ steps.injection-test.outcome }}
         run: |
           failed=0
           expect() { # <what> <got> <want>
@@ -178,6 +230,14 @@ jobs:
           expect "type error, source src" "$TYPE_ERROR_SRC" failure
           expect "failing test" "$FAILING_TEST" failure
           expect "failing test, test: false" "$FAILING_TEST_NO_TEST" success
+          expect "shell in source, format check" "$INJECTION_FORMAT" failure
+          expect "shell in source, type check" "$INJECTION_CHECK" failure
+          expect "shell in source, tests" "$INJECTION_TEST" failure
+          for f in injected-substitution injected-semicolon; do
+            if [ -e "$RUNNER_TEMP/$f" ]; then
+              echo "::error::a source containing shell ran it: $RUNNER_TEMP/$f exists"; failed=1
+            else echo "ok: shell in source did not run ($f)"; fi
+          done
           exit "$failed"
 
       # bynk is on PATH from the steps above. The annotations depend on
