@@ -283,9 +283,20 @@ jobs:
           ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          job="$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --paginate \
-            --jq '.jobs[] | select(.name | endswith("Each check fails what it should")) | .id' | head -n1)"
-          [ -n "$job" ] || { echo "::error::could not find the refuse job in this run"; exit 1; }
+          # "Re-run failed jobs" carries a job that passed over from the
+          # earlier attempt without listing it in the new one, so when this
+          # attempt has no completed refuse job, walk back through the earlier
+          # attempts and take the most recent one where it completed.
+          job=""
+          for (( try = ATTEMPT; try >= 1; try-- )); do
+            job="$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/$try/jobs" --paginate \
+              --jq '.jobs[] | select(.status == "completed" and (.name | endswith("Each check fails what it should"))) | .id' | head -n1)"
+            if [ -n "$job" ]; then
+              [ "$try" -eq "$ATTEMPT" ] || echo "Using the refuse job from attempt $try"
+              break
+            fi
+          done
+          [ -n "$job" ] || { echo "::error::could not find a completed refuse job in attempts $ATTEMPT to 1 of this run"; exit 1; }
           notes="$(gh api "repos/$REPO/check-runs/$job/annotations" --paginate \
             --jq '.[] | select(.message | contains("return_mismatch") or contains("declared return type")) | "\(.path):\(.start_line)"')"
           echo "$notes"
