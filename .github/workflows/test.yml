@@ -168,9 +168,73 @@ jobs:
           source: .
           test: "false"
 
-      # A crafted `source` is passed to bynk as a literal path, which doesn't
-      # exist, so each check fails; it never runs as shell (bynk-ci#47). Each
-      # check on its own, so a later one isn't skipped by an earlier failure.
+      - name: Assert the outcomes
+        shell: bash
+        env:
+          UNFORMATTED: ${{ steps.unformatted.outcome }}
+          UNFORMATTED_NO_FORMAT: ${{ steps.unformatted-no-format.outcome }}
+          TYPE_ERROR: ${{ steps.type-error.outcome }}
+          TYPE_ERROR_FORMAT_ONLY: ${{ steps.type-error-format-only.outcome }}
+          TYPE_ERROR_SRC: ${{ steps.type-error-src.outcome }}
+          FAILING_TEST: ${{ steps.failing-test.outcome }}
+          FAILING_TEST_NO_TEST: ${{ steps.failing-test-no-test.outcome }}
+        run: |
+          failed=0
+          expect() { # <what> <got> <want>
+            if [ "$2" = "$3" ]; then echo "ok: $1 = $2"
+            else echo "::error::$1 was '$2', expected '$3'"; failed=1; fi
+          }
+          expect "unformatted" "$UNFORMATTED" failure
+          expect "unformatted, format: false" "$UNFORMATTED_NO_FORMAT" success
+          expect "type error" "$TYPE_ERROR" failure
+          expect "type error, format check only" "$TYPE_ERROR_FORMAT_ONLY" success
+          expect "type error, source src" "$TYPE_ERROR_SRC" failure
+          expect "failing test" "$FAILING_TEST" failure
+          expect "failing test, test: false" "$FAILING_TEST_NO_TEST" success
+          exit "$failed"
+
+      # bynk is on PATH from the steps above. The annotations depend on
+      # `bynk check --format short` matching the problem matcher's regexp, and
+      # on its path being the file as typed from the working directory. Run from
+      # the repository root, as the action does.
+      - name: The problem matcher parses a diagnostic
+        shell: bash
+        run: |
+          # The check is meant to fail here; it's the output that's under test.
+          out="$(bynk check --format short test/fixtures/type-error 2>&1)" || true
+          echo "$out"
+          MATCHER="$GITHUB_WORKSPACE/bynk-problem-matcher.json" OUT="$out" node -e '
+            const m = require(process.env.MATCHER).problemMatcher[0].pattern[0];
+            const re = new RegExp(m.regexp);
+            const hit = process.env.OUT.split("\n").map(l => l.match(re)).find(Boolean);
+            if (!hit) { console.log("::error::no line of bynk check output matches the problem matcher"); process.exit(1); }
+            const got = { file: hit[m.file], line: hit[m.line], column: hit[m.column],
+                          severity: hit[m.severity], code: hit[m.code] };
+            const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "7", column: "2",
+                           severity: "error", code: "bynk.types.return_mismatch" };
+            console.log(JSON.stringify(got));
+            for (const k of Object.keys(want)) {
+              if (got[k] !== want[k]) { console.log(`::error::matcher ${k} is ${got[k]}, expected ${want[k]}`); process.exitCode = 1; }
+            }
+          '
+
+  # A crafted `source` is passed to bynk as a literal path, which doesn't
+  # exist, so each check fails; it never runs as shell (bynk-ci#47). Each
+  # check on its own, so a later one isn't skipped by an earlier failure. A
+  # job of its own, so its failures don't add to the annotations the
+  # annotations job reads from the refuse job.
+  injection:
+    name: A source is never run as shell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Choose the Bynk version
+        shell: bash
+        run: echo "BYNK_VERSION=${REQUESTED:-$(tr -d '[:space:]' < BYNK_VERSION)}" >> "$GITHUB_ENV"
+
       - name: Shell in source, format check
         id: injection-format
         continue-on-error: true
@@ -204,35 +268,18 @@ jobs:
           format: "false"
           check: "false"
 
-      - name: Assert the outcomes
+      - name: Assert
         shell: bash
         env:
-          UNFORMATTED: ${{ steps.unformatted.outcome }}
-          UNFORMATTED_NO_FORMAT: ${{ steps.unformatted-no-format.outcome }}
-          TYPE_ERROR: ${{ steps.type-error.outcome }}
-          TYPE_ERROR_FORMAT_ONLY: ${{ steps.type-error-format-only.outcome }}
-          TYPE_ERROR_SRC: ${{ steps.type-error-src.outcome }}
-          FAILING_TEST: ${{ steps.failing-test.outcome }}
-          FAILING_TEST_NO_TEST: ${{ steps.failing-test-no-test.outcome }}
-          INJECTION_FORMAT: ${{ steps.injection-format.outcome }}
-          INJECTION_CHECK: ${{ steps.injection-check.outcome }}
-          INJECTION_TEST: ${{ steps.injection-test.outcome }}
+          FORMAT: ${{ steps.injection-format.outcome }}
+          CHECK: ${{ steps.injection-check.outcome }}
+          TEST: ${{ steps.injection-test.outcome }}
         run: |
           failed=0
-          expect() { # <what> <got> <want>
-            if [ "$2" = "$3" ]; then echo "ok: $1 = $2"
-            else echo "::error::$1 was '$2', expected '$3'"; failed=1; fi
-          }
-          expect "unformatted" "$UNFORMATTED" failure
-          expect "unformatted, format: false" "$UNFORMATTED_NO_FORMAT" success
-          expect "type error" "$TYPE_ERROR" failure
-          expect "type error, format check only" "$TYPE_ERROR_FORMAT_ONLY" success
-          expect "type error, source src" "$TYPE_ERROR_SRC" failure
-          expect "failing test" "$FAILING_TEST" failure
-          expect "failing test, test: false" "$FAILING_TEST_NO_TEST" success
-          expect "shell in source, format check" "$INJECTION_FORMAT" failure
-          expect "shell in source, type check" "$INJECTION_CHECK" failure
-          expect "shell in source, tests" "$INJECTION_TEST" failure
+          for got in "format check:$FORMAT" "type check:$CHECK" "tests:$TEST"; do
+            if [ "${got#*:}" = failure ]; then echo "ok: ${got%%:*} = failure"
+            else echo "::error::shell in source, ${got%%:*} was '${got#*:}', expected 'failure'"; failed=1; fi
+          done
           for f in injected-substitution injected-semicolon; do
             if [ -e "$RUNNER_TEMP/$f" ]; then
               echo "::error::a source containing shell ran it: $RUNNER_TEMP/$f exists"; failed=1
@@ -240,32 +287,7 @@ jobs:
           done
           exit "$failed"
 
-      # bynk is on PATH from the steps above. The annotations depend on
-      # `bynk check --format short` matching the problem matcher's regexp, and
-      # on its path being the file as typed from the working directory. Run from
-      # the repository root, as the action does.
-      - name: The problem matcher parses a diagnostic
-        shell: bash
-        run: |
-          # The check is meant to fail here; it's the output that's under test.
-          out="$(bynk check --format short test/fixtures/type-error 2>&1)" || true
-          echo "$out"
-          MATCHER="$GITHUB_WORKSPACE/bynk-problem-matcher.json" OUT="$out" node -e '
-            const m = require(process.env.MATCHER).problemMatcher[0].pattern[0];
-            const re = new RegExp(m.regexp);
-            const hit = process.env.OUT.split("\n").map(l => l.match(re)).find(Boolean);
-            if (!hit) { console.log("::error::no line of bynk check output matches the problem matcher"); process.exit(1); }
-            const got = { file: hit[m.file], line: hit[m.line], column: hit[m.column],
-                          severity: hit[m.severity], code: hit[m.code] };
-            const want = { file: "test/fixtures/type-error/src/greeting.bynk", line: "7", column: "2",
-                           severity: "error", code: "bynk.types.return_mismatch" };
-            console.log(JSON.stringify(got));
-            for (const k of Object.keys(want)) {
-              if (got[k] !== want[k]) { console.log(`::error::matcher ${k} is ${got[k]}, expected ${want[k]}`); process.exitCode = 1; }
-            }
-          '
-
-  # End to end: the annotations GitHub recorded on the job above, for the type
+  # End to end: the annotations GitHub recorded on the refuse job, for the type
   # error the action checked with `source: .` and with `source: src`, must name
   # the file relative to the repository, so they land on the right line of a PR.
   annotations:
