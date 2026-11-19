@@ -69,7 +69,7 @@ runs:
           [ -f "$file" ] || die "version-file $file does not exist"
           want="$(tr -d '[:space:]' < "$file")"
           [[ "$want" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]] \
-            || die "version-file $file must hold an exact version such as 0.404.0, not '$want'"
+            || die "version-file $file must hold an exact version such as 0.639.1, not '$want'"
         fi
         echo "version=$want" >> "$GITHUB_OUTPUT"
 
